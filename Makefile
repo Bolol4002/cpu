@@ -11,17 +11,17 @@ VVP      = vvp
 SRC = $(wildcard $(SRC_DIR)/*.v)
 
 # ===== Default target =====
-all: datapath
+all: cpu
 
-# ===== datapath Test =====
-datapath:
+# ===== cpu Test =====
+cpu:
 	mkdir -p $(OUT_DIR)
-	$(IVERILOG) -o $(OUT_DIR)/datapath_test $(SRC) $(TB_DIR)/datapath_tb.v
-	$(VVP) $(OUT_DIR)/datapath_test
+	$(IVERILOG) -o $(OUT_DIR)/cpu_test $(SRC) $(TB_DIR)/cpu_tb.v
+	$(VVP) $(OUT_DIR)/cpu_test
 
 # ===== Open waveform =====
 wave:
-	gtkwave $(OUT_DIR)/datapath_tb.vcd
+	gtkwave $(OUT_DIR)/cpu_tb.vcd
 
 # ===== Clean outputs =====
 clean:

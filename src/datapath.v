@@ -5,14 +5,12 @@ module datapath(
 );
 
 wire [4:0] rs1, rs2, rd;
-wire is_add;
-wire is_sub;
-
+wire is_add, is_sub;
 wire [31:0] rd1, rd2;
 wire [31:0] alu_result;
+wire write_enable;
 
-// decode instruction
-decoder dec(
+decoder dec0(
     .instr(instr),
     .rs1(rs1),
     .rs2(rs2),
@@ -21,27 +19,25 @@ decoder dec(
     .is_sub(is_sub)
 );
 
-// register file
 regfile rf(
     .clk(clk),
     .rs1(rs1),
     .rs2(rs2),
     .rd(rd),
     .wd(alu_result),
-
-    // write when either ADD or SUB
-    .we(we & (is_add | is_sub)),
-
+    .we(write_enable),
     .rd1(rd1),
     .rd2(rd2)
 );
 
-// ALU
 alu alu0(
     .a(rd1),
     .b(rd2),
-    .op_sub(is_sub),   // control signal
+    .op_sub(is_sub),
     .result(alu_result)
 );
+
+// only write back on enabled (we) and for ALU ops (add/sub)
+assign write_enable = we & (is_add | is_sub);
 
 endmodule
