@@ -1,103 +1,136 @@
 # Experimental
 
-Simple RISC-V CPU (educational)
+## Simple RISC-V CPU (Educational)
 
-This repository contains a small educational CPU datapath that implements a tiny subset of RISC-V (R-type add/sub). The goal is to experiment with instruction decoding, register file behavior, ALU operations, and simple testbenches.
+This repository contains a small educational CPU that implements a minimal subset of the **RISC-V ISA** (R-type `add` and `sub`).
+The project explores instruction decoding, register file behavior, ALU operations, and execution flow using simulation.
 
-## Repository layout
+The focus is understanding how machine instructions become electrical behavior.
 
-- `src/` — RTL sources
-    - `cpu.v`       — top-level CPU that wires `pc`, `imem`, and `datapath`
-    - `pc.v`        — program counter (increments by 4)
-    - `imem.v`      — simple instruction memory (word-addressable array)
-    - `decoder.v`   — extracts fields and recognizes `add`/`sub`
-    - `regfile.v`   — register file (32 x 32-bit registers)
-    - `alu.v`       — ALU supporting add/sub
-    - `datapath.v`  — wires `decoder`, `regfile`, and `alu` together
-- `tb/` — testbenches
-    - `alu_tb.v`    — ALU unit test
-    - `cpu_tb.v`    — system-level testbench that preloads registers and memory
+---
 
-## Build & run
+## Repository Layout
 
-Recommended: use the provided `Makefile`:
+### `src/` — RTL Sources
+
+* **cpu.v** — top-level CPU wiring `pc`, `imem`, and `datapath`
+* **pc.v** — program counter (increments by 4 each cycle)
+* **imem.v** — instruction memory (word-addressable ROM)
+* **decoder.v** — extracts instruction fields and detects `add` / `sub`
+* **regfile.v** — 32 × 32-bit register file (x0 hardwired to zero)
+* **alu.v** — ALU supporting add/sub operations
+* **datapath.v** — connects decoder, regfile, and ALU
+
+### `tb/` — Testbenches
+
+* **alu_tb.v** — ALU unit test
+* **cpu_tb.v** — system-level testbench with instruction execution
+
+### `vcd_files/`
+
+Waveform outputs for GTKWave analysis.
+
+---
+
+## Build & Run
+
+Recommended:
 
 ```bash
 make
 ```
 
-Direct commands:
+### Run ALU Test
 
-ALU only:
 ```bash
-iverilog -o alu_test src/alu.v tb/alu_tb.v && vvp alu_test
+iverilog -o alu_test src/alu.v tb/alu_tb.v
+vvp alu_test
 ```
 
-Full CPU testbench:
+### Run Full CPU Simulation
+
 ```bash
-iverilog -o vcd_files/cpu_test src/alu.v src/cpu.v src/datapath.v src/decoder.v src/imem.v src/pc.v src/regfile.v tb/cpu_tb.v && vvp vcd_files/cpu_test
+iverilog -o vcd_files/cpu_test \
+src/alu.v src/cpu.v src/datapath.v src/decoder.v \
+src/imem.v src/pc.v src/regfile.v tb/cpu_tb.v
+
+vvp vcd_files/cpu_test
 ```
 
-## Waveforms
+---
 
-VCD files are written to `vcd_files/`. View them with `gtkwave`:
+## Viewing Waveforms
+
+VCD files are written to `vcd_files/`.
 
 ```bash
 gtkwave vcd_files/cpu_tb.vcd
 ```
 
-## Testbench notes
+Observe:
 
-- `tb/cpu_tb.v` uses hierarchical access to preload the DUT state. Example:
+* register reads & writes
+* ALU results
+* instruction flow
+* control signal behavior
 
-```
+---
+
+## Testbench Notes
+
+The CPU testbench preloads state using hierarchical access:
+
+```verilog
 dut.dp0.rf.regs[1] = 10;
 dut.dp0.rf.regs[2] = 20;
-dut.imem0.memory[0] = 32'b0000000_00010_00001_000_00011_0110011; // ADD x3,x1,x2
+
+dut.imem0.memory[0] =
+  32'b0000000_00010_00001_000_00011_0110011; // ADD x3,x1,x2
 ```
 
-- If you rename instances in RTL (for example change `rf` to `regfile_inst`), update `tb/cpu_tb.v` accordingly.
-
-## Implementation details
-
-- `imem` indexes memory with `addr[6:2]` (word address into a 32-word array).
-- `regfile` hardwires `x0` reads to zero and ignores writes to register 0.
-- `decoder` recognizes `add` vs `sub` using `opcode`, `funct3`, and `funct7`.
-
-## Extending the project
-
-- Add more instructions by expanding `decoder.v` and the control logic in `datapath.v`.
-- Implement immediate extraction, ALU control, and memory interface to support I-type and load/store instructions.
+If module instance names change, update the hierarchical paths.
 
 ---
-Last updated: 2026-02-15
 
-# R-Type add instruction details ->
-You’ve just stepped across an invisible threshold: the CPU stops seeing *bits* and starts recognizing *meaning*. This is where silicon learns vocabulary.
-Let’s slow this moment down and examine it like a detective reconstructing a crime scene.
+## Implementation Details
+
+* `imem` uses `addr[6:2]` for word indexing.
+* `regfile` ignores writes to x0 and always returns 0.
+* `decoder` distinguishes ADD vs SUB via `opcode`, `funct3`, and `funct7`.
+* ALU operation is selected using control logic derived from decode signals.
 
 ---
-## 🧠 From Binary Noise → Structured Meaning
-A CPU never sees:
-> `add x3, x1, x2`
-It only sees:
+
+## Extending the Project
+
+Suggested next steps:
+
+* add **ADDI** (I-type)
+* implement **ALU control bus**
+* add **branch instructions**
+* add **data memory** (load/store)
+* execute compiled RISC-V programs
+
+---
+
+# R-Type ADD Instruction Details
+
+A CPU does not see:
+
+```
+add x3, x1, x2
+```
+
+It sees a 32-bit pattern:
 
 ```
 0000000 00010 00001 000 00011 0110011
 ```
 
-That is a 32-bit **RISC-V R-type instruction**.
-The job of the **instruction decoder** is to slice this into fields and decide:
-*What operation is this?*
-*Which registers are involved?*
+This is the **RISC-V R-type format**.
 
----
-##  Field Extraction
-![Image](https://www.researchgate.net/publication/371712484/figure/fig5/AS%3A11431281414857296%401746024474247/R-I-S-type-instruction-format-for-RISC-V.tif)
-![Image](https://i.sstatic.net/MUKIE.png)
-![Image](https://i.sstatic.net/Gkjuc.png)
-![Image](https://prepbytes-misc-images.s3.ap-south-1.amazonaws.com/assets/1679377927169-1-01%20%288%29.png)
-Each bit region has a fixed meaning:
+## Field Layout
+
 | Bits  | Field  | Purpose              |
 | ----- | ------ | -------------------- |
 | 31–25 | funct7 | operation variant    |
@@ -108,88 +141,73 @@ Each bit region has a fixed meaning:
 | 6–0   | opcode | instruction class    |
 
 Think of it like parsing a sentence:
-**opcode** → verb category
-**funct fields** → exact verb
-**rs1, rs2** → nouns (inputs)
-**rd** → where the result goes
+
+* **opcode** → verb category
+* **funct fields** → exact action
+* **rs1, rs2** → inputs
+* **rd** → destination
 
 ---
-## 🔍 Recognizing ADD
-For an **ADD** instruction:
+
+## Recognizing ADD
+
+ADD is identified by:
+
 ```
-opcode = 0110011   (R-type arithmetic)
+opcode = 0110011
 funct3 = 000
 funct7 = 0000000
 ```
-When these match, the decoder asserts:
 
-```
-is_add = 1
-```
-Not philosophy. Not magic. Just pattern recognition.
-
----
-## 🧬 Hardware Implementation
-This is pure wiring logic:
+Hardware detection:
 
 ```verilog
-module decoder(
-    input  [31:0] instr,
-    output [4:0] rs1, rs2, rd,
-    output is_add
-);
-
-assign rs1 = instr[19:15];
-assign rs2 = instr[24:20];
-assign rd  = instr[11:7];
-
-wire [6:0] opcode = instr[6:0];
-wire [2:0] funct3 = instr[14:12];
-wire [6:0] funct7 = instr[31:25];
-
 assign is_add =
-    (opcode == 7'b0110011) &&
-    (funct3 == 3'b000) &&
-    (funct7 == 7'b0000000);
-
-endmodule
+  (opcode == 7'b0110011) &&
+  (funct3 == 3'b000) &&
+  (funct7 == 7'b0000000);
 ```
-No clock needed. Decoding is **combinational logic** — instantaneous truth evaluation.
+
+Decoding is combinational logic — instant pattern recognition.
 
 ---
-## ⚙️ What Happens When ADD is Recognized?
-Once `is_add = 1`:
-• Register file outputs rs1 & rs2 values
-• ALU performs addition
-• Result written back to rd
-The decoder itself **does not compute**.
-It **declares intent**.
-The ALU executes.
 
----
-## 🧠 Why funct7 Exists (Hidden Brilliance)
-Consider:
+## Why funct7 Matters
+
 ```
 ADD → funct7 = 0000000
 SUB → funct7 = 0100000
 ```
-Same opcode. Same funct3.
-Only funct7 differs.
-This lets one ALU perform multiple operations using the **same datapath**, changing only the control signal.
-Hardware minimalism at its finest
+
+Same datapath. Different control signal.
+
+This enables multiple operations using minimal hardware.
 
 ---
-## 🧩 Binary → Language → Action
-You have now built:
-* ALU → computation
-* Register file → memory
-* Decoder → understanding
-That triad is the embryo of every CPU ever built.
-From here, the next logical evolution is:
-### 🧭 Control Signals
-The decoder must begin generating:
-* ALU operation select
-* register write enable
-* operand source selection
-This is where a CPU stops being a collection of parts and becomes a **coordinated organism**.
-And that, as any good engineer-detective knows, is when the system begins to exhibit behavior.
+
+## Execution Flow
+
+When ADD is decoded:
+
+1. register file outputs rs1 & rs2
+2. ALU performs addition
+3. result written to rd
+
+The decoder declares intent.
+The datapath performs the work.
+
+---
+
+## Architectural Insight
+
+This project implements the foundational CPU triad:
+
+* **ALU** → computation
+* **Register file** → storage
+* **Decoder** → instruction understanding
+
+Add control and sequencing, and simple circuits become a programmable machine.
+
+---
+
+Last updated: 2026-02-15
