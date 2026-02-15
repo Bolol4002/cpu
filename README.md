@@ -1,5 +1,77 @@
 # Experimental
 
+Simple RISC-V CPU (educational)
+
+This repository contains a small educational CPU datapath that implements a tiny subset of RISC-V (R-type add/sub). The goal is to experiment with instruction decoding, register file behavior, ALU operations, and simple testbenches.
+
+## Repository layout
+
+- `src/` — RTL sources
+    - `cpu.v`       — top-level CPU that wires `pc`, `imem`, and `datapath`
+    - `pc.v`        — program counter (increments by 4)
+    - `imem.v`      — simple instruction memory (word-addressable array)
+    - `decoder.v`   — extracts fields and recognizes `add`/`sub`
+    - `regfile.v`   — register file (32 x 32-bit registers)
+    - `alu.v`       — ALU supporting add/sub
+    - `datapath.v`  — wires `decoder`, `regfile`, and `alu` together
+- `tb/` — testbenches
+    - `alu_tb.v`    — ALU unit test
+    - `cpu_tb.v`    — system-level testbench that preloads registers and memory
+
+## Build & run
+
+Recommended: use the provided `Makefile`:
+
+```bash
+make
+```
+
+Direct commands:
+
+ALU only:
+```bash
+iverilog -o alu_test src/alu.v tb/alu_tb.v && vvp alu_test
+```
+
+Full CPU testbench:
+```bash
+iverilog -o vcd_files/cpu_test src/alu.v src/cpu.v src/datapath.v src/decoder.v src/imem.v src/pc.v src/regfile.v tb/cpu_tb.v && vvp vcd_files/cpu_test
+```
+
+## Waveforms
+
+VCD files are written to `vcd_files/`. View them with `gtkwave`:
+
+```bash
+gtkwave vcd_files/cpu_tb.vcd
+```
+
+## Testbench notes
+
+- `tb/cpu_tb.v` uses hierarchical access to preload the DUT state. Example:
+
+```
+dut.dp0.rf.regs[1] = 10;
+dut.dp0.rf.regs[2] = 20;
+dut.imem0.memory[0] = 32'b0000000_00010_00001_000_00011_0110011; // ADD x3,x1,x2
+```
+
+- If you rename instances in RTL (for example change `rf` to `regfile_inst`), update `tb/cpu_tb.v` accordingly.
+
+## Implementation details
+
+- `imem` indexes memory with `addr[6:2]` (word address into a 32-word array).
+- `regfile` hardwires `x0` reads to zero and ignores writes to register 0.
+- `decoder` recognizes `add` vs `sub` using `opcode`, `funct3`, and `funct7`.
+
+## Extending the project
+
+- Add more instructions by expanding `decoder.v` and the control logic in `datapath.v`.
+- Implement immediate extraction, ALU control, and memory interface to support I-type and load/store instructions.
+
+---
+Last updated: 2026-02-15
+
 # R-Type add instruction details ->
 You’ve just stepped across an invisible threshold: the CPU stops seeing *bits* and starts recognizing *meaning*. This is where silicon learns vocabulary.
 Let’s slow this moment down and examine it like a detective reconstructing a crime scene.
