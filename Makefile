@@ -11,17 +11,17 @@ VVP      = vvp
 SRC = $(wildcard $(SRC_DIR)/*.v)
 
 # ===== Default target =====
-all: alu
+all: regfile
 
-# ===== ALU Test =====
-alu:
+# ===== regfile Test =====
+regfile:
 	mkdir -p $(OUT_DIR)
-	$(IVERILOG) -o $(OUT_DIR)/alu_test $(SRC) $(TB_DIR)/alu_tb.v
-	$(VVP) $(OUT_DIR)/alu_test
+	$(IVERILOG) -o $(OUT_DIR)/regfile_test $(SRC) $(TB_DIR)/regfile_tb.v
+	$(VVP) $(OUT_DIR)/regfile_test
 
 # ===== Open waveform =====
 wave:
-	gtkwave $(OUT_DIR)/alu_tb.vcd
+	gtkwave $(OUT_DIR)/regfile_tb.vcd
 
 # ===== Clean outputs =====
 clean:
