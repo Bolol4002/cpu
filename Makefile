@@ -11,17 +11,17 @@ VVP      = vvp
 SRC = $(wildcard $(SRC_DIR)/*.v)
 
 # ===== Default target =====
-all: regfile
+all: decoder
 
-# ===== regfile Test =====
-regfile:
+# ===== decoder Test =====
+decoder:
 	mkdir -p $(OUT_DIR)
-	$(IVERILOG) -o $(OUT_DIR)/regfile_test $(SRC) $(TB_DIR)/regfile_tb.v
-	$(VVP) $(OUT_DIR)/regfile_test
+	$(IVERILOG) -o $(OUT_DIR)/decoder_test $(SRC) $(TB_DIR)/decoder_tb.v
+	$(VVP) $(OUT_DIR)/decoder_test
 
 # ===== Open waveform =====
 wave:
-	gtkwave $(OUT_DIR)/regfile_tb.vcd
+	gtkwave $(OUT_DIR)/decoder_tb.vcd
 
 # ===== Clean outputs =====
 clean:
